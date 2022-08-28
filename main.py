@@ -83,7 +83,7 @@ def main(**kwargs):
 
         # init
         if not args.use_embed:
-            # 不使用预训练词向量
+            print("不使用预训练词向量")
             model = getattr(models, args.model)(args)
         else:
             model = getattr(models, args.model)(args, embedding_model.vectors)

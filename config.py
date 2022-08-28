@@ -61,6 +61,9 @@ class DefaultConfig(object):
     # RCNN
     rcnn_kernel = 512
 
+    # transformer
+    transformer_layer_num = 4
+
     def parse(self, kwargs):
         '''
         根据字典kwargs 更新 config参数
