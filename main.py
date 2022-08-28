@@ -90,7 +90,7 @@ def main(**kwargs):
         model.to(args.device)
         optimizer = model.get_optimizer(args.lr1, args.lr2, args.weight_decay)
         # optimizer = get_optimizer(model.parameters(), args.lr1, args.lr2, args.weight_decay)
-        best_model_path, best_score = train_model(model, optimizer, criterion, train_dataloader, val_dataloader, args, k)
+        best_model_path, best_score = train_model(model, optimizer, criterion, args.lr1, args.lr2, train_dataloader, val_dataloader, args, k)
         all_best_score.append(best_score)
 
         ckp = torch.load(best_model_path, map_location=args.device)
@@ -126,7 +126,7 @@ def  save_checkpoint_state(epoch,model,optimizer,path, score):
 
     torch.save(checkpoint, path)
 
-def train_model(model, opt, loss_func, train_data, val_data, args, k):
+def train_model(model, opt, loss_func, lr1, lr2, train_data, val_data, args, k):
     model.train()
     patient = 0
     loss_li = []
