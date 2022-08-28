@@ -168,7 +168,7 @@ def train_model(model, opt, loss_func, train_data, val_data, args, k):
             model.load_state_dict(torch.load(best_model_path)['model_state_dict'])
             lr1 *= args.lr_decay
             lr2 = 2e-4 if lr2 == 0 else lr2 * 0.8
-            optimizer = model.get_optimizer(lr1, lr2, 0)
+            opt = model.get_optimizer(lr1, lr2, 0)
             if lr1 < args.min_lr:
                 break
     return best_model_path, args.best_score
