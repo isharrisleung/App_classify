@@ -19,6 +19,7 @@ class DefaultConfig(object):
     patient = 5
     val_rate = 0.2
     save_model_num = 1
+    use_embed = True
 
     # 数据集参数
     data_path = './data/new_train_data.csv'

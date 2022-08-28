@@ -82,9 +82,14 @@ def main(**kwargs):
         val_dataloader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_work, pin_memory=False, drop_last=False)
 
         # init
-        model = getattr(models, args.model)(args, embedding_model.vectors)
+        if not args.use_embed:
+            # 不使用预训练词向量
+            model = getattr(models, args.model)(args)
+        else:
+            model = getattr(models, args.model)(args, embedding_model.vectors)
         model.to(args.device)
-        optimizer = get_optimizer(model.parameters(), args.lr1, args.lr2, args.weight_decay)
+        optimizer = model.get_optimizer(args.lr1, args.lr2, args.weight_decay)
+        # optimizer = get_optimizer(model.parameters(), args.lr1, args.lr2, args.weight_decay)
         best_model_path, best_score = train_model(model, optimizer, criterion, train_dataloader, val_dataloader, args, k)
         all_best_score.append(best_score)
 
@@ -109,34 +114,6 @@ def main(**kwargs):
     result_path = args.save_dir + '/{}_{}'.format(args.model, round(sum(all_best_score)/len(all_best_score), 5))
     all_test[['id', 'label']].to_csv('{}.csv'.format(result_path), index=None)
     print('Result {}.csv saved!'.format(result_path))
-
-    # tmp = np.random.permutation(len(train_data))
-    # train_idx = tmp[:int(len(train_data) * (1 - args.val_rate))]
-    # val_idx = tmp[int(len(train_data) * (1 - args.val_rate)): ]
-    # train = train_data.loc[train_idx, ["name", "description", "new_label"]]
-    # val = train_data.loc[val_idx, ["name", "description", "new_label"]]
-    # train_dataset = data.AppDataset(embedding_model, train, args, "WordVec")
-    # val_dataset = data.AppDataset(embedding_model, val, args, "WordVec")
-    # train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_work, pin_memory=False, drop_last=True)
-    # val_dataloader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_work, pin_memory=False, drop_last=False)
-
-    # # init
-    # model = getattr(models, args.model)(args, embedding_model.vectors)
-    # model.to(args.device)
-    # optimizer = get_optimizer(model.parameters(), args.lr1, args.lr2, args.weight_decay)
-    # best_model_path = train_model(model, optimizer, criterion, train_dataloader, val_dataloader, args)
-    # # del model
-    # # del optimizer
-    # # del train_dataloader
-    # # del val_dataloader
-
-    # ckp = torch.load(best_model_path, map_location=args.device)
-    # model.load_state_dict(ckp["model_state_dict"])
-    # test_data = pd.read_csv(args.test_path)
-    # test_dataset = data.TestAppDataset(embedding_model, test_data, args, "WordVec")
-    # test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_work, pin_memory=False, drop_last=False)
-    # test_pred = test(model, test_dataloader, args)
-    # test_pred["label"] = test_pred.new_label.apply(transform_label)
 
 def  save_checkpoint_state(epoch,model,optimizer,path, score):
     checkpoint = {
@@ -182,9 +159,17 @@ def train_model(model, opt, loss_func, train_data, val_data, args, k):
                 os.remove(tmp_path)
             best_model_path = output_model_file
             save_checkpoint_state(e+1, model, opt, output_model_file, score)
+        # else:
+        #     patient += 1
+        #     if patient >= args.patient:
+        #         break
         else:
-            patient += 1
-            if patient >= args.patient:
+            # embed参数分开训练
+            model.load_state_dict(torch.load(best_model_path)['model_state_dict'])
+            lr1 *= args.lr_decay
+            lr2 = 2e-4 if lr2 == 0 else lr2 * 0.8
+            optimizer = model.get_optimizer(lr1, lr2, 0)
+            if lr1 < args.min_lr:
                 break
     return best_model_path, args.best_score
 

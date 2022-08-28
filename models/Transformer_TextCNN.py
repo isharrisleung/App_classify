@@ -3,11 +3,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import numpy as np
+from .BasicModule import BasicModule
 
 
 kernal_sizes = [1, 2, 3, 4, 5]
 
-class Transformer_TextCNN(nn.Module):
+class Transformer_TextCNN(BasicModule):
     def __init__(self, args, vectors=None):
         super(Transformer_TextCNN, self).__init__()
 
@@ -83,7 +84,7 @@ class Transformer_TextCNN(nn.Module):
         self.fc1 = nn.Linear(args.linear_hidden_size * 2, args.linear_hidden_size)
         self.dp1 = nn.Dropout(0.1)
         self.fc2 = nn.Linear(args.linear_hidden_size, args.label_size)
-        print(self)
+        # print(self)
 
     def forward(self, name, name_length, name_mask, desc, desc_length, desc_mask):
         name = self.embedding(name).permute(1, 0, 2) # 输出 seq len, batch, emb
