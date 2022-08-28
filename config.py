@@ -42,6 +42,8 @@ class DefaultConfig(object):
     max_epochs = 100
     cuda = True
 
+    linear_hidden_size = 64
+
     # TextCNN
     kernel_num = 200  # number of each kind of kernel
     kernel_sizes = '3,4,5'  # kernel size to use for convolution

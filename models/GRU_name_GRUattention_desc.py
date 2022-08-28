@@ -35,7 +35,6 @@ class GRU_name_GRUattention_desc(nn.Module):
         name_pack = pack_padded_sequence(input=name, lengths=name_length, batch_first=True, enforce_sorted=False)
         name, _ = self.name_bigru(name_pack)
         name, _ = pad_packed_sequence(name, batch_first=True, total_length=self.name_length)
-
         name = torch.sum(name, dim=1) / name_length.unsqueeze(1)
 
         desc = self.embedding(desc)
