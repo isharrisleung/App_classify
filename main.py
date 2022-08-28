@@ -159,18 +159,18 @@ def train_model(model, opt, loss_func, lr1, lr2, train_data, val_data, args, k):
                 os.remove(tmp_path)
             best_model_path = output_model_file
             save_checkpoint_state(e+1, model, opt, output_model_file, score)
-        # else:
-        #     patient += 1
-        #     if patient >= args.patient:
-        #         break
         else:
-            # embed参数分开训练
-            model.load_state_dict(torch.load(best_model_path)['model_state_dict'])
-            lr1 *= args.lr_decay
-            lr2 = 2e-4 if lr2 == 0 else lr2 * 0.8
-            opt = model.get_optimizer(lr1, lr2, 0)
-            if lr1 < args.min_lr:
+            patient += 1
+            if patient >= args.patient:
                 break
+        # else:
+        #     # embed参数分开训练
+        #     model.load_state_dict(torch.load(best_model_path)['model_state_dict'])
+        #     lr1 *= args.lr_decay
+        #     lr2 = 2e-4 if lr2 == 0 else lr2 * 0.8
+        #     opt = model.get_optimizer(lr1, lr2, 0)
+        #     if lr1 < args.min_lr:
+        #         break
     return best_model_path, args.best_score
 
 
