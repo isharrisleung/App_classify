@@ -5,7 +5,7 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import numpy as np
 from .BasicModule import BasicModule
 
-class TRANSFORMER(BasicModule):
+class TRANSFORMER(nn.Module):
     def __init__(self, args, vectors=None):
         super(TRANSFORMER, self).__init__()
 
@@ -22,9 +22,8 @@ class TRANSFORMER(BasicModule):
 
         self.hidden_dim = args.hidden_dim
         self.gru_layers = args.lstm_layers
-
-        self.name_att = nn.TransformerEncoder(nn.TransformerEncoderLayer(args.embedding_dim, args.attn_head, self.hidden_dim), num_layers=args.transformer_layer_num)
-        self.desc_att = nn.TransformerEncoder(nn.TransformerEncoderLayer(args.embedding_dim, args.attn_head, self.hidden_dim), num_layers=args.transformer_layer_num)
+        self.desc_att = nn.TransformerEncoderLayer(args.embedding_dim, args.attn_head, self.hidden_dim)
+        self.name_att = nn.TransformerEncoderLayer(args.embedding_dim, args.attn_head, self.hidden_dim)
 
         self.fc1 = nn.Linear(args.embedding_dim * 2, self.hidden_dim)
         self.dp1 = nn.Dropout(0.1)
