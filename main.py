@@ -65,7 +65,7 @@ def main(**kwargs):
     args.save_dir = os.path.join(args.save_dir, args.model)
     if not os.path.exists(args.save_dir):
         os.mkdir(args.save_dir)
-    embedding_model = KeyedVectors.load_word2vec_format(args.embedding_path, binary=True)
+    embedding_model = KeyedVectors.load_word2vec_format(args.embedding_path, binary=args.binary)
 
     all_best_score = []
 
@@ -138,6 +138,11 @@ def train_model(model, opt, loss_func, lr1, lr2, train_data, val_data, args, k):
         databar = tqdm(train_data, file=sys.stdout)
         for idx, data in enumerate(databar):
             opt.zero_grad()
+            # if idx == 13:
+            #     print(app_desc)
+            #     print(len_desc)
+            #     # print(mask_name)
+            #     input()
             app_name, len_name, mask_name, app_desc, len_desc, mask_desc, label = read_data(data, args)
             pred = model(app_name, len_name, mask_name, app_desc, len_desc, mask_desc)
             label = label.flatten()
@@ -146,6 +151,9 @@ def train_model(model, opt, loss_func, lr1, lr2, train_data, val_data, args, k):
             opt.step()
             loss_li.append(loss.detach().cpu().numpy().item())
             avg_loss = np.round(np.mean(loss_li), 4)
+            # print(loss_li)
+            # if avg_loss == np.nan:
+            #     print(avg_loss)
             databar.set_description(f"Epoch {e + 1} Loss: {avg_loss}")
 
         score = val(model, val_data, args)

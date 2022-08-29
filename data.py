@@ -45,6 +45,11 @@ class AppDataset(Dataset):
             vec[count:] = self.vocab_size
             attn_mask[count:] = 1
 
+        if count == 0:
+            # 这句话中都没有句子了
+            vec[0] = 0
+            count = 1
+
         return torch.LongTensor(vec), count, torch.LongTensor(attn_mask).eq(1)
 
     def __len__(self):
