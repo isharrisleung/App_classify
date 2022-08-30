@@ -109,6 +109,7 @@ def main(**kwargs):
         del test_dataloader
         gc.collect()
 
+
     for i in range(len(all_test)):
         tmp = list(all_test.iloc[i, 3:].values)
         all_test.loc[i, "new_label"] = max(set(tmp),key=tmp.count)
@@ -116,6 +117,13 @@ def main(**kwargs):
     result_path = args.save_dir + '/{}_{}'.format(args.model, round(sum(all_best_score)/len(all_best_score), 5))
     all_test[['id', 'label']].to_csv('{}.csv'.format(result_path), index=None)
     print('Result {}.csv saved!'.format(result_path))
+
+    pred_prob = np.argmax(all_prob, axis=1).flatten()
+    test_id = test_data['id'].copy()
+    test_prob_pred = pd.DataFrame({'id': test_id, 'new_label': pred_prob})
+    test_prob_pred["label"] = ""
+    test_prob_pred["label"] = test_prob_pred.new_label.apply(transform_label)
+    test_prob_pred[['id', 'label']].to_csv('{}.csv'.format(args.save_dir + "/test_prob"), index=None)
 
 def  save_checkpoint_state(epoch,model,optimizer,path, score):
     checkpoint = {
@@ -157,7 +165,6 @@ def train_model(model, opt, loss_func, lr1, lr2, train_data, val_data, args, k):
             # if avg_loss == np.nan:
             #     print(avg_loss)
             databar.set_description(f"Epoch {e + 1} Loss: {avg_loss}")
-            break
 
         score = val(model, val_data, args)
         args.best_score = max(score, args.best_score)
@@ -182,7 +189,7 @@ def train_model(model, opt, loss_func, lr1, lr2, train_data, val_data, args, k):
         #     opt = model.get_optimizer(lr1, lr2, 0)
         #     if lr1 < args.min_lr:
         #         break
-        
+        # break
     return best_model_path, args.best_score
 
 
@@ -192,25 +199,26 @@ def test(model, test_data, args):
     model.eval()
 
     result = np.zeros((0,))
-    probs_list = []
+    probs_list = np.zeros((0,args.label_size))
     with torch.no_grad():
         for batch in test_data:
             app_name, len_name, mask_name, app_desc, len_desc, mask_desc = read_data(batch, args)
             outputs = model(app_name, len_name, mask_name, app_desc, len_desc, mask_desc)
             probs = F.softmax(outputs, dim=1)
-            probs_list.append(probs.cpu().numpy())
+            probs_list = np.vstack((probs_list, probs.cpu().numpy()))
+            # probs_list.append(probs.cpu().numpy())
             pred = np.argmax(probs.cpu(), axis=1).flatten()
             result = np.hstack((result, pred.cpu().numpy()))
 
     # 生成概率文件npy
-    prob_cat = np.array(probs_list)
+    # prob_cat = np.array(probs_list)
 
     test = pd.read_csv('./data/sample_submit.csv')
     test_id = test['id'].copy()
     test_pred = pd.DataFrame({'id': test_id, 'new_label': result})
     # test_pred['class'] = (test_pred['class'] + 1).astype(int)
 
-    return test_pred, prob_cat
+    return test_pred, probs_list
 
 
 def val(model, dataset, args):
@@ -225,7 +233,7 @@ def val(model, dataset, args):
             app_name, len_name, mask_name, app_desc, len_desc, mask_desc, label = read_data(batch, args)
             label = label.flatten().cpu().numpy()
             pred = model(app_name, len_name, mask_name, app_desc, len_desc, mask_desc)
-            probs = F.softmax(pred, dim=1)
+            probs = F.log_softmax(pred, dim=1)
             pred = np.argmax(probs.cpu().numpy(), axis=1)
             acc_n += (pred == label).sum().item()
             val_n += label.shape[0]
