@@ -3,8 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import numpy as np
+from .BasicModule import BasicModule
 
-class GRU_MULTI_HEAD(nn.Module):
+class GRU_MULTI_HEAD(BasicModule):
     def __init__(self, args, vectors=None):
         super(GRU_MULTI_HEAD, self).__init__()
 

@@ -9,7 +9,7 @@ from sklearn import metrics
 import numpy as np
 import random
 from sklearn.model_selection import KFold
-from sklearn.model_selection import StratifiedKFold
+# from sklearn.model_selection import StratifiedShuffleSplit
 from torch.utils.data import DataLoader, Dataset
 from gensim.models.word2vec import Word2Vec, KeyedVectors
 from tqdm import tqdm
@@ -71,8 +71,8 @@ def main(**kwargs):
 
     all_test = pd.read_csv('./data/sample_submit.csv')
     all_test["new_label"] = 0
-    kf = StratifiedKFold(n_splits=args.fold, random_state=args.seed, shuffle=True)
-    for k, (train_idx, val_idx) in enumerate(kf.split(train_data, train_data["new_label"].values)):
+    kf = KFold(n_splits=args.fold, random_state=args.seed, shuffle=True)
+    for k, (train_idx, val_idx) in enumerate(kf.split(train_data)):
         print("----------------{} fold----------------".format(k))
         train = train_data.loc[train_idx, ["name", "description", "new_label"]]
         val = train_data.loc[val_idx, ["name", "description", "new_label"]]

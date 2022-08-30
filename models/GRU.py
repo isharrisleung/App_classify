@@ -1,10 +1,12 @@
+from multiprocessing.spawn import import_main_path
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import numpy as np
+from .BasicModule import BasicModule
 
-class GRU(nn.Module):
+class GRU(BasicModule):
     def __init__(self, args, vectors=None):
         super(GRU, self).__init__()
 

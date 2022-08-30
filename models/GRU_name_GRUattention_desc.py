@@ -3,8 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import numpy as np
+from .BasicModule import BasicModule
 
-class GRU_name_GRUattention_desc(nn.Module):
+class GRU_name_GRUattention_desc(BasicModule):
     def __init__(self, args, vectors=None):
         super(GRU_name_GRUattention_desc, self).__init__()
 
