@@ -60,17 +60,20 @@ def main(**kwargs):
         args.device = "cuda:{}".format(args.device)
 
     print(args.print_config())
+    embedding_model = KeyedVectors.load_word2vec_format(args.embedding_path, binary=args.binary)
     criterion = nn.CrossEntropyLoss()
     train_data = pd.read_csv(args.data_path)
+    test_data = pd.read_csv(args.test_path)
+    test_dataset = data.TestAppDataset(embedding_model, test_data, args, "WordVec")
     args.save_dir = os.path.join(args.save_dir, args.model)
     if not os.path.exists(args.save_dir):
         os.mkdir(args.save_dir)
-    embedding_model = KeyedVectors.load_word2vec_format(args.embedding_path, binary=args.binary)
 
     all_best_score = []
 
     all_test = pd.read_csv('./data/sample_submit.csv')
     all_test["new_label"] = 0
+    all_prob = np.zeros((len(test_dataset), args.label_size))
     kf = KFold(n_splits=args.fold, random_state=args.seed, shuffle=True)
     for k, (train_idx, val_idx) in enumerate(kf.split(train_data)):
         print("----------------{} fold----------------".format(k))
@@ -95,11 +98,10 @@ def main(**kwargs):
 
         ckp = torch.load(best_model_path, map_location=args.device)
         model.load_state_dict(ckp["model_state_dict"])
-        test_data = pd.read_csv(args.test_path)
-        test_dataset = data.TestAppDataset(embedding_model, test_data, args, "WordVec")
         test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_work, pin_memory=False, drop_last=False)
-        test_pred = test(model, test_dataloader, args)
+        test_pred, test_prob = test(model, test_dataloader, args)
         all_test["{}_label".format(k)] = test_pred["new_label"]
+        all_prob = all_prob + test_prob
         del model
         del optimizer
         del train_dataloader
@@ -155,6 +157,7 @@ def train_model(model, opt, loss_func, lr1, lr2, train_data, val_data, args, k):
             # if avg_loss == np.nan:
             #     print(avg_loss)
             databar.set_description(f"Epoch {e + 1} Loss: {avg_loss}")
+            break
 
         score = val(model, val_data, args)
         args.best_score = max(score, args.best_score)
@@ -179,6 +182,7 @@ def train_model(model, opt, loss_func, lr1, lr2, train_data, val_data, args, k):
         #     opt = model.get_optimizer(lr1, lr2, 0)
         #     if lr1 < args.min_lr:
         #         break
+        
     return best_model_path, args.best_score
 
 
@@ -193,20 +197,20 @@ def test(model, test_data, args):
         for batch in test_data:
             app_name, len_name, mask_name, app_desc, len_desc, mask_desc = read_data(batch, args)
             outputs = model(app_name, len_name, mask_name, app_desc, len_desc, mask_desc)
-            probs = F.log_softmax(outputs, dim=1)
-            # probs_list.append(probs.cpu().numpy())
+            probs = F.softmax(outputs, dim=1)
+            probs_list.append(probs.cpu().numpy())
             pred = np.argmax(probs.cpu(), axis=1).flatten()
             result = np.hstack((result, pred.cpu().numpy()))
 
     # 生成概率文件npy
-    # prob_cat = np.concatenate(probs_list, axis=0)
+    prob_cat = np.array(probs_list)
 
     test = pd.read_csv('./data/sample_submit.csv')
     test_id = test['id'].copy()
     test_pred = pd.DataFrame({'id': test_id, 'new_label': result})
     # test_pred['class'] = (test_pred['class'] + 1).astype(int)
 
-    return test_pred
+    return test_pred, prob_cat
 
 
 def val(model, dataset, args):
@@ -221,7 +225,7 @@ def val(model, dataset, args):
             app_name, len_name, mask_name, app_desc, len_desc, mask_desc, label = read_data(batch, args)
             label = label.flatten().cpu().numpy()
             pred = model(app_name, len_name, mask_name, app_desc, len_desc, mask_desc)
-            probs = F.log_softmax(pred, dim=1)
+            probs = F.softmax(pred, dim=1)
             pred = np.argmax(probs.cpu().numpy(), axis=1)
             acc_n += (pred == label).sum().item()
             val_n += label.shape[0]
