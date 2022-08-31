@@ -23,4 +23,4 @@ for i in range(len(all_test)):
     all_test.loc[i, "new_label"] = max(set(tmp),key=tmp.count)
 
 all_test["label"] = all_test["new_label"]
-all_test[['id', 'label']].to_csv('{}.csv'.format("all_test"), index=None)
+all_test[['id', 'label']].to_csv('./ckp/{}.csv'.format("all_test"), index=None)
