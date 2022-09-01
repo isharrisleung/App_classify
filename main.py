@@ -31,6 +31,30 @@ label_dict={0:'14783134 15697333 14854817 14925479',1:'14847385 14844587 1484864
     16: '14844856 14724258 14925237 14854807', 17:'14852788 14717848 15639958 15632020', \
      18:'14784131 14858934 14784131 14845064'}
 
+
+class FGM():
+    def __init__(self, model):
+        self.model = model
+        self.backup = {}
+
+    def attack(self, epsilon=1., emb_name='embedding'):
+        # emb_name这个参数要换成你模型中embedding的参数名
+        for name, param in self.model.named_parameters():
+            if param.requires_grad and emb_name in name:
+                self.backup[name] = param.data.clone()
+                norm = torch.norm(param)
+                if norm != 0 and not torch.isnan(norm):
+                    r_at = epsilon * param / norm
+                    param.data.add_(r_at)
+
+    def restore(self, emb_name='embedding'):
+        # emb_name这个参数要换成你模型中embedding的参数名
+        for name, param in self.model.named_parameters():
+            if param.requires_grad and emb_name in name: 
+                assert name in self.backup
+                param.data = self.backup[name]
+        self.backup = {}
+
 def transform_label(label):
     return label_dict[int(label)]
 
@@ -90,6 +114,7 @@ def main(**kwargs):
             model = getattr(models, args.model)(args)
         else:
             model = getattr(models, args.model)(args, embedding_model.vectors)
+        # print(model)
         model.to(args.device)
         optimizer = model.get_optimizer(args.lr1, args.lr2, args.weight_decay)
         # optimizer = get_optimizer(model.parameters(), args.lr1, args.lr2, args.weight_decay)
@@ -143,6 +168,8 @@ def train_model(model, opt, loss_func, lr1, lr2, train_data, val_data, args, k):
     model_li = deque()
     best_model_path = ""
     args.best_score = -10
+    if args.fgm:
+        fgm = FGM(model)    # 加上对抗训练
     for e in range(args.max_epochs):
         model.train()
         databar = tqdm(train_data, file=sys.stdout)
@@ -154,10 +181,14 @@ def train_model(model, opt, loss_func, lr1, lr2, train_data, val_data, args, k):
             #     # print(mask_name)
             #     input()
             app_name, len_name, mask_name, app_desc, len_desc, mask_desc, label = read_data(data, args)
+            if args.fgm:
+                fgm.attack()
             pred = model(app_name, len_name, mask_name, app_desc, len_desc, mask_desc)
             label = label.flatten()
             loss = loss_func(pred, label)
             loss.backward()
+            if args.fgm:
+                fgm.restore()
             opt.step()
             loss_li.append(loss.detach().cpu().numpy().item())
             avg_loss = np.round(np.mean(loss_li), 4)

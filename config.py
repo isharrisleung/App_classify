@@ -21,6 +21,7 @@ class DefaultConfig(object):
     save_model_num = 1
     use_embed = True
     binary = True
+    fgm = False
 
     # 数据集参数
     data_path = './data/new_train_data.csv'

@@ -3,6 +3,7 @@ python main.py main --model='Transformer_TextCNN' \
     --attn_head 1 --device=0 --data_path='./data/good_data.csv' \
     --fold 5 \
     --name_max_text_len 15 --desc_max_text_len 95 \
-    --transformer_layer_num 2
+    --transformer_layer_num 2 \
+    --fgm True
 
 # python main.py main --model='Fasttext' --attn_head 1 --device=0 --data_path='./data/new_train_data.csv'
