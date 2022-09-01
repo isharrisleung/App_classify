@@ -25,8 +25,11 @@ class Transformer_TextCNN(BasicModule):
 
         self.hidden_dim = args.hidden_dim
         self.gru_layers = args.lstm_layers
-        self.desc_att = nn.TransformerEncoderLayer(args.embedding_dim, args.attn_head, self.hidden_dim)
-        self.name_att = nn.TransformerEncoderLayer(args.embedding_dim, args.attn_head, self.hidden_dim)
+        self.desc_encoder_layer = nn.TransformerEncoderLayer(args.embedding_dim, args.attn_head, self.hidden_dim)
+        self.name_encoder_layer = nn.TransformerEncoderLayer(args.embedding_dim, args.attn_head, self.hidden_dim)
+
+        self.name_encoder = nn.TransformerEncoder(self.name_encoder_layer, num_layers=args.transformer_layer_num)
+        self.desc_encoder = nn.TransformerEncoder(self.desc_encoder_layer, num_layers=args.transformer_layer_num)
 
         name_convs = [
             nn.Sequential(
@@ -88,13 +91,13 @@ class Transformer_TextCNN(BasicModule):
 
     def forward(self, name, name_length, name_mask, desc, desc_length, desc_mask):
         name = self.embedding(name).permute(1, 0, 2) # 输出 seq len, batch, emb
-        name = self.name_att(name, src_key_padding_mask=name_mask).permute(1, 2, 0) 
+        name = self.name_encoder(name, src_key_padding_mask=name_mask).permute(1, 2, 0) 
         name_conv_out = [conv(name) for conv in self.name_convs]
         name_conv_out = torch.cat(name_conv_out, dim=1)
         name_fcout = self.name_fc(name_conv_out.view(name_conv_out.size(0), -1))
 
         desc = self.embedding(desc).permute(1, 0, 2)
-        desc = self.desc_att(desc, src_key_padding_mask=desc_mask).permute(1, 2, 0)
+        desc = self.desc_encoder(desc, src_key_padding_mask=desc_mask).permute(1, 2, 0)
         desc_conv_out = [conv(desc) for conv in self.desc_convs]
         desc_conv_out = torch.cat(desc_conv_out, dim=1)
         desc_fcout = self.desc_fc(desc_conv_out.view(desc_conv_out.size(0), -1))

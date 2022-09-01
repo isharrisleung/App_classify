@@ -63,7 +63,7 @@ class DefaultConfig(object):
     rcnn_kernel = 512
 
     # transformer
-    transformer_layer_num = 4
+    transformer_layer_num = 2
 
     def parse(self, kwargs):
         '''
