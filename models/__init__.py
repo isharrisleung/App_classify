@@ -6,3 +6,4 @@ from .Fasttext import Fasttext
 from .GRU_MULTI_HEAD import GRU_MULTI_HEAD
 from .GRU_name_GRUattention_desc import GRU_name_GRUattention_desc
 from .Transformer_TextCNN import Transformer_TextCNN
+from .Transformer_TextCNN_itdf import Transformer_TextCNN_itdf

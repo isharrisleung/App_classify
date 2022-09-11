@@ -96,3 +96,56 @@ class TestAppDataset(Dataset):
 
     def __len__(self):
         return len(self.raw_data)
+
+
+class TfidAppDataset(Dataset):
+    def __init__(self, name_embd, desc_embd, raw_data, args, embed_method="WordVec"):
+        super().__init__()
+        self.raw_data = raw_data
+        self.name_embd = name_embd
+        self.desc_embd = desc_embd
+        self.vocab = self.embed_model.key_to_index
+        self.vocab_size = args.vocab_size
+        self.embed_method = embed_method
+        self.name_length = args.name_max_text_len
+        self.desc_length = args.desc_max_text_len
+        self.embed_dim = args.embedding_dim
+
+    def __getitem__(self, index):
+        data = self.raw_data.iloc[index]
+        name = data["name"]
+        dec = data["description"]
+        label = data["new_label"]
+
+        name_vec, name_len, name_mask = self.name_embd.tranform(name), 0, torch.zero((1,))
+        dec_vec, dec_len, dec_mask = self.desc_embd.tranform(dec), 0, torch.zero((1,))
+
+        return name_vec, name_len, name_mask, dec_vec, dec_len, dec_mask, torch.LongTensor([label])
+
+    def __len__(self):
+        return len(self.raw_data)
+
+    def __init__(self, name_embd, desc_embd, raw_data, args, embed_method="WordVec"):
+        super().__init__()
+        self.raw_data = raw_data
+        self.name_embd = name_embd
+        self.desc_embd = desc_embd
+        self.vocab = self.embed_model.key_to_index
+        self.vocab_size = args.vocab_size
+        self.embed_method = embed_method
+        self.name_length = args.name_max_text_len
+        self.desc_length = args.desc_max_text_len
+        self.embed_dim = args.embedding_dim
+
+    def __getitem__(self, index):
+        data = self.raw_data.iloc[index]
+        name = data["name"]
+        dec = data["description"]
+
+        name_vec, name_len, name_mask = self.name_embd.tranform(name), 0, torch.zero((1,))
+        dec_vec, dec_len, dec_mask = self.desc_embd.tranform(dec), 0, torch.zero((1,))
+
+        return name_vec, name_len, name_mask, dec_vec, dec_len, dec_mask
+
+    def __len__(self):
+        return len(self.raw_data)
